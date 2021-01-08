@@ -22,4 +22,4 @@ class GameState():
             ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']
         ]
         self.whiteToMove = True
-        self.moveLog = []
+        self.movelog = []
