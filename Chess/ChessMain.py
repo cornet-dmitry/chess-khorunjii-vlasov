@@ -33,6 +33,7 @@ def main():
             if e.type == pg.QUIT:
                 running = False
 
+        drawGameState(screen, gs)
         clock.tick(MAX_FPS)
         pg.display.flip()
 
@@ -43,11 +44,19 @@ def drawGameState(screen, gs):
 
 
 def drawBoard(screen):
-    pass
+    colors = [pg.Color('white'), pg.Color('gray')]
+    for row in range(DIMENSION):
+        for col in range(DIMENSION):
+            color = colors[((row + col) % 2)]
+            pg.draw.rect(screen, color, pg.Rect(col * SQ_SIZE, row * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
 def drawPieces(screen, board):
-    pass
+    for row in range(DIMENSION):
+        for col in range(DIMENSION):
+            piece = board[row][col]
+            if piece != '--':
+                screen.blit(IMAGES[piece], pg.Rect(col * SQ_SIZE, row * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
 if __name__ == '__main__':
