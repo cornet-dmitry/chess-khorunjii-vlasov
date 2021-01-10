@@ -24,7 +24,11 @@ def main():
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     clock = pg.time.Clock()
     screen.fill(pg.Color('white'))
+
     gs = ChessEngine.GameState()
+    validMoves = gs.getValidMoves()
+    moveMade = False
+
     loadImages()  # only do this once, before the will loop
 
     running = True
@@ -35,6 +39,7 @@ def main():
         for e in pg.event.get():
             if e.type == pg.QUIT:
                 running = False
+            # mouse handlers
             elif e.type == pg.MOUSEBUTTONDOWN:
                 location = pg.mouse.get_pos()
                 col = location[0] // SQ_SIZE
@@ -48,13 +53,20 @@ def main():
                 if len(playerClicks) == 2:  # after 2nd click
                     move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
                     print(move.getChessNotation())
-                    gs.makeMove(move)
+                    if move in validMoves:
+                        gs.makeMove(move)
+                        moveMade = True
                     sqSelected = ()  # reset users click
                     playerClicks = []
             # key handlers
             elif e.type == pg.KEYDOWN:
                 if e.key == pg.K_z:  # undo when 'z' is pressed
                     gs.undoMove()
+                    moveMade = True
+
+        if moveMade:
+            validMoves = gs.getValidMoves()
+            moveMade = False
 
         drawGameState(screen, gs)
         clock.tick(MAX_FPS)
