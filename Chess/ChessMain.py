@@ -28,10 +28,29 @@ def main():
     loadImages()  # only do this once, before the will loop
 
     running = True
+    sqSelected = ()
+    playerClicks = []
+
     while running:
         for e in pg.event.get():
             if e.type == pg.QUIT:
                 running = False
+            elif e.type == pg.MOUSEBUTTONDOWN:
+                location = pg.mouse.get_pos()
+                col = location[0] // SQ_SIZE
+                row = location[1] // SQ_SIZE
+                if sqSelected == (row, col):
+                    sqSelected = ()
+                    playerClicks = []
+                else:
+                    sqSelected = (row, col)
+                    playerClicks.append(sqSelected)
+                if len(playerClicks) == 2:  # after 2nd click
+                    move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    print(move.getChessNotation())
+                    gs.makeMove(move)
+                    sqSelected = ()  # reset users click
+                    playerClicks = []
 
         drawGameState(screen, gs)
         clock.tick(MAX_FPS)
@@ -44,7 +63,8 @@ def drawGameState(screen, gs):
 
 
 def drawBoard(screen):
-    colors = [pg.Color('white'), pg.Color('gray')]
+    # colors = [pg.Color('white'), pg.Color('gray')]
+    colors = [(242, 216, 183), (181, 136, 100)]
     for row in range(DIMENSION):
         for col in range(DIMENSION):
             color = colors[((row + col) % 2)]
