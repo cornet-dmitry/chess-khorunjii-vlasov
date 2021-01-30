@@ -28,6 +28,7 @@ def main():
     gs = ChessEngine.GameState()
     validMoves = gs.getValidMoves()
     moveMade = False
+    animate = True
 
     loadImages()  # only do this once, before the will loop
 
@@ -35,42 +36,67 @@ def main():
     sqSelected = ()
     playerClicks = []
 
+    gameOver = False
+
     while running:
         for e in pg.event.get():
             if e.type == pg.QUIT:
                 running = False
             # mouse handlers
             elif e.type == pg.MOUSEBUTTONDOWN:
-                location = pg.mouse.get_pos()
-                col = location[0] // SQ_SIZE
-                row = location[1] // SQ_SIZE
-                if sqSelected == (row, col):
-                    sqSelected = ()
-                    playerClicks = []
-                else:
-                    sqSelected = (row, col)
-                    playerClicks.append(sqSelected)
-                if len(playerClicks) == 2:  # after 2nd click
-                    move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
-                    if move in validMoves:
-                        gs.makeMove(move)
-                        moveMade = True
-                        sqSelected = ()  # reset users click
+                if not gameOver:
+                    location = pg.mouse.get_pos()
+                    col = location[0] // SQ_SIZE
+                    row = location[1] // SQ_SIZE
+                    if sqSelected == (row, col):
+                        sqSelected = ()
                         playerClicks = []
                     else:
-                        playerClicks = [sqSelected]
+                        sqSelected = (row, col)
+                        playerClicks.append(sqSelected)
+                    if len(playerClicks) == 2:  # after 2nd click
+                        move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                        if move in validMoves:
+                            gs.makeMove(move)
+                            moveMade = True
+                            animate = True
+                            sqSelected = ()  # reset users click
+                            playerClicks = []
+                        else:
+                            playerClicks = [sqSelected]
+
             # key handlers
             elif e.type == pg.KEYDOWN:
                 if e.key == pg.K_z:  # undo when 'z' is pressed
                     gs.undoMove()
                     moveMade = True
+                if e.type == pg.K_r:  # reset the board when 'r' is pressed
+                    gs = ChessEngine.GameState()
+                    validMoves = gs.getValidMoves()
+                    sqSelected = ()
+                    playerClicks = []
+                    moveMade = False
+                    animate = False
 
         if moveMade:
-            animateMove(gs.moveLog[-1], screen, gs.board, clock)
+            if animate:
+                animateMove(gs.moveLog[-1], screen, gs.board, clock)
             validMoves = gs.getValidMoves()
             moveMade = False
+            animate = False
 
         drawGameState(screen, gs, validMoves, sqSelected)
+
+        if gs.checkmate:
+            gameOver = True
+            if gs.whiteToMove:
+                drawText(screen, 'Black wins to checkmate')
+            else:
+                drawText(screen, 'White wins to checkmate')
+        elif gs.stalemate:
+            gameOver = True
+            drawText(screen, 'Stalemate')
+
         clock.tick(MAX_FPS)
         pg.display.flip()
 
@@ -141,6 +167,14 @@ def animateMove(move, screen, board, clock):
         screen.blit(IMAGES[move.pieceMoved], pg.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
         pg.display.flip()
         clock.tick(120)
+
+
+def drawText(screen, text):
+    font = pg.font.SysFont('Arial', 32, True, False)
+    textObject = font.render(text, 0, pg.Color('Black'))
+    textLocation = pg.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - textObject.get_width() / 2,
+                                                     HEIGHT / 2 - textObject.get_height() / 2)
+    screen.blit(textObject, textLocation)
 
 
 if __name__ == '__main__':
