@@ -1,11 +1,21 @@
+import os
+
 import pygame as pg
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 from Chess import ChessEngine
+
+import sqlite3
+
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8  # dimension on a chess board are 8x8
 SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 15
 IMAGES = {}
+
 
 """Initialize a global dictionary of images. This will be called exactly once in the main"""
 
@@ -19,13 +29,17 @@ def loadImages():
 """The main driver for our code. This will handle user input and updating the graphics"""
 
 
-def main():
+def main(usersID):
+    global firstUserID, secondUserID
+    firstUserID = usersID[0]
+    secondUserID = usersID[1]
+
     pg.init()
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     clock = pg.time.Clock()
     screen.fill(pg.Color('white'))
 
-    gs = ChessEngine.GameState()
+    gs = ChessEngine.GameState(firstUserID, secondUserID)
     validMoves = gs.getValidMoves()
     moveMade = False
     animate = True
@@ -91,8 +105,10 @@ def main():
             gameOver = True
             if gs.whiteToMove:
                 drawText(screen, 'Black wins to checkmate')
+                addWins('black', 'Black wins to checkmate')
             else:
                 drawText(screen, 'White wins to checkmate')
+                addWins('white', 'White wins to checkmate')
         elif gs.stalemate:
             gameOver = True
             drawText(screen, 'Stalemate')
@@ -177,5 +193,35 @@ def drawText(screen, text):
     screen.blit(textObject, textLocation)
 
 
+def addWins(color, message):
+    con = sqlite3.connect("chess.sqlite")
+    cur = con.cursor()
+
+    """Wins"""
+    if color == 'white':
+        winsID = firstUserID
+    else:
+        winsID = secondUserID
+
+    resultWins = cur.execute("SELECT Wins FROM Users WHERE ID=?", (winsID,)).fetchall()[0][0]
+    resultWins += 1
+
+    cur.execute(f"""UPDATE Users SET Wins={resultWins} WHERE ID={winsID}""")
+    con.commit()
+
+    """Defeats"""
+    if color == 'white':
+        loseID = secondUserID
+    else:
+        loseID = firstUserID
+
+    resultDefeats = cur.execute("SELECT Defeats FROM Users WHERE ID=?", (loseID,)).fetchall()[0][0]
+    resultDefeats += 1
+
+    cur.execute(f"""UPDATE Users SET Defeats={resultDefeats} WHERE ID={loseID}""")
+    con.commit()
+    con.close()
+
+
 if __name__ == '__main__':
-    main()
+    main([1, 2])

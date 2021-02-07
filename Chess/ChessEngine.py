@@ -3,10 +3,14 @@ This class is responsible for storing all the information about the current stat
 It will also be responsible for determining the valid moves at the current state.
 It will also keep a move log.
 """
+import sqlite3
+
+from Chess import main
 
 
 class GameState:
-    def __init__(self):
+
+    def __init__(self, firstUserID, secondUserID):
         # Board is an 8x8 2d list, each element of the list has 2 characters
         # The first character represents the color of the piece: 'w' or 'b'
         # The second character represents the type of the piece: 'K', 'Q', 'R', 'B', 'N' or 'P'
@@ -28,19 +32,66 @@ class GameState:
         self.moveLog = []
         self.whiteKingLocation = (7, 2)
         self.blackKingLocation = (0, 2)
-        self.checkMate = False
-        self.staleMate = False
+        self.checkmate = False
+        self.stalemate = False
+        self.list = []
+        self.firstUserID = firstUserID
+        self.secondUserID = secondUserID
+        self.beforeCountPiece = 32
+        self.tempCount = 0
 
     def makeMove(self, move):
         self.board[move.startRow][move.startCol] = '--'
         self.board[move.endRow][move.endCol] = move.pieceMoved
         self.moveLog.append(move)
+        self.countPiece()
+
         self.whiteToMove = not self.whiteToMove
         # update the king's location if moved
         if move.pieceMoved == 'wK':
             self.whiteKingLocation = (move.endRow, move.endCol)
         elif move.pieceMoved == 'bK':
             self.blackKingLocation = (move.endRow, move.endCol)
+
+    def countPiece(self):
+        self.tempCount += 1
+        if self.tempCount % (32 - (32 - self.beforeCountPiece)) == 0:
+            count = 0
+            for i in self.board:
+                for j in i:
+                    if j != '--':
+                        count += 1
+            if self.beforeCountPiece - 1 == count:
+                self.givenPiece()
+            self.beforeCountPiece = count
+
+    def givenPiece(self):
+        con = sqlite3.connect("chess.sqlite")
+        cur = con.cursor()
+
+        if not self.whiteToMove:
+            resultGiven = cur.execute("SELECT Given FROM Users WHERE ID=?", (self.firstUserID,)).fetchall()[0][0]
+            resultGiven += 1
+            cur.execute(f"""UPDATE Users SET Given={resultGiven} WHERE ID={self.firstUserID}""")
+            con.commit()
+        else:
+            resultGiven = cur.execute("SELECT Given FROM Users WHERE ID=?", (self.secondUserID,)).fetchall()[0][0]
+            resultGiven += 1
+            cur.execute(f"""UPDATE Users SET Given={resultGiven} WHERE ID={self.secondUserID}""")
+            con.commit()
+
+        if self.whiteToMove:
+            resultTaken = cur.execute("SELECT Taken FROM Users WHERE ID=?", (self.firstUserID,)).fetchall()[0][0]
+            resultTaken += 1
+            cur.execute(f"""UPDATE Users SET Taken={resultTaken} WHERE ID={self.firstUserID}""")
+            con.commit()
+        else:
+            resultTaken = cur.execute("SELECT Taken FROM Users WHERE ID=?", (self.secondUserID,)).fetchall()[0][0]
+            resultTaken += 1
+            cur.execute(f"""UPDATE Users SET Taken={resultTaken} WHERE ID={self.secondUserID}""")
+            con.commit()
+
+        con.close()
 
     def undoMove(self):
         if len(self.moveLog) != 0:
@@ -68,12 +119,12 @@ class GameState:
 
         if len(moves) == 0:  # either checkmate or stalemate
             if self.inCheck():
-                self.checkMate = True
+                self.checkmate = True
             else:
-                self.staleMate = True
+                self.stalemate = True
         else:
-            self.checkMate = False
-            self.staleMate = False
+            self.checkmate = False
+            self.stalemate = False
 
         return moves
 
