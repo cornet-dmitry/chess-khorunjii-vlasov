@@ -105,10 +105,12 @@ def main(usersID):
             gameOver = True
             if gs.whiteToMove:
                 drawText(screen, 'Black wins to checkmate')
-                addWins('black', 'Black wins to checkmate')
+                addWins('black')
+                running = False
             else:
                 drawText(screen, 'White wins to checkmate')
-                addWins('white', 'White wins to checkmate')
+                addWins('white')
+                running = False
         elif gs.stalemate:
             gameOver = True
             drawText(screen, 'Stalemate')
@@ -193,7 +195,7 @@ def drawText(screen, text):
     screen.blit(textObject, textLocation)
 
 
-def addWins(color, message):
+def addWins(color):
     con = sqlite3.connect("chess.sqlite")
     cur = con.cursor()
 
@@ -205,6 +207,7 @@ def addWins(color, message):
 
     resultWins = cur.execute("SELECT Wins FROM Users WHERE ID=?", (winsID,)).fetchall()[0][0]
     resultWins += 1
+    print(resultWins)
 
     cur.execute(f"""UPDATE Users SET Wins={resultWins} WHERE ID={winsID}""")
     con.commit()
@@ -217,6 +220,7 @@ def addWins(color, message):
 
     resultDefeats = cur.execute("SELECT Defeats FROM Users WHERE ID=?", (loseID,)).fetchall()[0][0]
     resultDefeats += 1
+    print(resultDefeats)
 
     cur.execute(f"""UPDATE Users SET Defeats={resultDefeats} WHERE ID={loseID}""")
     con.commit()
@@ -224,4 +228,4 @@ def addWins(color, message):
 
 
 if __name__ == '__main__':
-    main([1, 2])
+    main([5, 6])
